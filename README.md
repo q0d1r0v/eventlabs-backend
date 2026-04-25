@@ -1,138 +1,139 @@
 # EventLab.uz — Backend
 
-Konferensiyalarni rejalashtirish va boshqarish tizimining backend qismi. NestJS,
-Prisma va Socket.IO asosida qurilgan REST API + real-time WebSocket xizmati.
+Backend service for a conference planning and management platform. Built with
+NestJS, Prisma, and Socket.IO — provides a REST API plus a real-time WebSocket
+layer.
 
 ---
 
-## Mundarija
+## Table of Contents
 
-1. [Texnologiyalar](#texnologiyalar)
-2. [Talablar](#talablar)
-3. [Tezkor ishga tushirish](#tezkor-ishga-tushirish)
-4. [Muhit o'zgaruvchilari (.env)](#muhit-ozgaruvchilari-env)
-5. [Test foydalanuvchilar](#test-foydalanuvchilar)
-6. [Foydali komandalar](#foydali-komandalar)
-7. [Loyiha tuzilmasi](#loyiha-tuzilmasi)
-8. [Ma'lumotlar bazasi modellari](#malumotlar-bazasi-modellari)
-9. [Autentifikatsiya va rollar](#autentifikatsiya-va-rollar)
-10. [API endpointlari](#api-endpointlari)
-11. [Fayl yuklash (uploads)](#fayl-yuklash-uploads)
-12. [Socket.IO real-time qatlam](#socketio-real-time-qatlam)
-13. [Email xizmati](#email-xizmati)
-14. [Sertifikat (PDF + QR)](#sertifikat-pdf--qr)
-15. [Xavfsizlik](#xavfsizlik)
-16. [Testlash](#testlash)
-17. [Production deploy](#production-deploy)
+1. [Tech Stack](#tech-stack)
+2. [Requirements](#requirements)
+3. [Quick Start](#quick-start)
+4. [Environment Variables (.env)](#environment-variables-env)
+5. [Test Users](#test-users)
+6. [Useful Commands](#useful-commands)
+7. [Project Structure](#project-structure)
+8. [Database Models](#database-models)
+9. [Authentication & Roles](#authentication--roles)
+10. [API Endpoints](#api-endpoints)
+11. [File Uploads](#file-uploads)
+12. [Socket.IO Real-time Layer](#socketio-real-time-layer)
+13. [Email Service](#email-service)
+14. [Certificates (PDF + QR)](#certificates-pdf--qr)
+15. [Security](#security)
+16. [Testing](#testing)
+17. [Production Deployment](#production-deployment)
 
 ---
 
-## Texnologiyalar
+## Tech Stack
 
-| Toifa | Texnologiya |
-|-------|-------------|
-| Freymvork | **NestJS 11** (Express platforma) |
-| Til | **TypeScript 5.7** |
+| Category | Technology |
+|----------|------------|
+| Framework | **NestJS 11** (Express platform) |
+| Language | **TypeScript 5.7** |
 | ORM | **Prisma 7** |
-| MB | **PostgreSQL 14+** |
+| Database | **PostgreSQL 14+** |
 | Real-time | **Socket.IO 4** (`@nestjs/websockets`) |
 | Auth | **JWT** (access + refresh) + **Passport** |
-| Validatsiya | `class-validator`, `class-transformer`, `ValidationPipe` |
-| Xavfsizlik | `helmet`, `@nestjs/throttler`, `bcrypt` |
-| Hujjat | `@nestjs/swagger` (OpenAPI 3) |
-| Fayllar | `multer` + `sharp` (rasm optimallashtirish) |
+| Validation | `class-validator`, `class-transformer`, `ValidationPipe` |
+| Security | `helmet`, `@nestjs/throttler`, `bcrypt` |
+| Documentation | `@nestjs/swagger` (OpenAPI 3) |
+| File handling | `multer` + `sharp` (image optimization) |
 | PDF / QR | `pdfkit` + `qrcode` |
-| Email | `nodemailer` (dev rejimda console log) |
+| Email | `nodemailer` (console logger in dev) |
 
 ---
 
-## Talablar
+## Requirements
 
 - **Node.js** ≥ 20
-- **Yarn** ≥ 1.22 (yoki `npm`)
-- **PostgreSQL** ≥ 14 (mahalliy yoki Docker'da)
+- **Yarn** ≥ 1.22 (or `npm`)
+- **PostgreSQL** ≥ 14 (local install or Docker)
 
 ---
 
-## Tezkor ishga tushirish
+## Quick Start
 
-### 1. PostgreSQL bazasini yarating
+### 1. Create the PostgreSQL database
 
 ```bash
 PGPASSWORD=YOUR_PASSWORD psql -h localhost -U postgres -c "CREATE DATABASE eventlab;"
 ```
 
-### 2. `.env` faylini sozlang
+### 2. Configure `.env`
 
-`.env.example`'ni `.env`'ga ko'chiring va `DATABASE_URL`'ni o'zingiznikiga moslang:
+Copy `.env.example` to `.env` and adjust `DATABASE_URL` to match your setup:
 
 ```env
 DATABASE_URL="postgresql://postgres:YOUR_PASSWORD@localhost:5432/eventlab"
 ```
 
-To'liq ro'yxat — quyida [Muhit o'zgaruvchilari](#muhit-ozgaruvchilari-env) bo'limida.
+The full list is in the [Environment Variables](#environment-variables-env) section below.
 
-### 3. Bog'liqliklarni o'rnating
+### 3. Install dependencies
 
 ```bash
 yarn install
 ```
 
-### 4. Ma'lumotlar bazasini tayyorlang
+### 4. Prepare the database
 
 ```bash
-yarn db:migrate     # schema → DB (migration ishga tushiradi)
-yarn db:seed        # test ma'lumotlar
+yarn db:migrate     # apply schema → DB (runs migrations)
+yarn db:seed        # load test data
 ```
 
-### 5. Serverni ishga tushiring
+### 5. Start the server
 
 ```bash
 yarn start:dev
 ```
 
-| Manzil | Maqsad |
-|--------|--------|
+| URL | Purpose |
+|-----|---------|
 | `http://localhost:3000/api` | REST API root |
-| `http://localhost:3000/docs` | Swagger UI (interaktiv hujjat) |
-| `http://localhost:3000/uploads/...` | Statik fayllar (rasm, hujjat, PDF) |
+| `http://localhost:3000/docs` | Swagger UI (interactive docs) |
+| `http://localhost:3000/uploads/...` | Static files (images, documents, PDFs) |
 | `ws://localhost:3000` | Socket.IO endpoint |
 
 ---
 
-## Muhit o'zgaruvchilari (.env)
+## Environment Variables (.env)
 
-| O'zgaruvchi | Standart | Tavsif |
-|-------------|----------|--------|
+| Variable | Default | Description |
+|----------|---------|-------------|
 | `NODE_ENV` | `development` | `development` / `production` |
 | `PORT` | `3000` | HTTP port |
-| `API_PREFIX` | `api` | Barcha endpointlar uchun prefiks |
-| `FRONTEND_URL` | `http://localhost:5173` | CORS uchun ruxsat etilgan origin |
-| `DATABASE_URL` | — | PostgreSQL ulanish satri (majburiy) |
-| `JWT_ACCESS_SECRET` | `dev-access-secret` | Access token uchun maxfiy kalit |
-| `JWT_ACCESS_EXPIRES_IN` | `15m` | Access token muddati |
-| `JWT_REFRESH_SECRET` | `dev-refresh-secret` | Refresh token uchun maxfiy kalit |
-| `JWT_REFRESH_EXPIRES_IN` | `7d` | Refresh token muddati |
-| `SMTP_HOST` | — | SMTP server (productionda) |
-| `SMTP_PORT` | `587` | SMTP porti |
-| `SMTP_USER` | — | SMTP login |
-| `SMTP_PASS` | — | SMTP parol |
-| `SMTP_FROM` | `EventLab.uz <noreply@eventlab.uz>` | Email "From" |
-| `UPLOAD_DIR` | `./uploads` | Yuklangan fayllar papkasi |
-| `MAX_FILE_SIZE` | `10485760` (10 MB) | Maksimal fayl hajmi (bayt) |
-| `THROTTLE_TTL` | `60` | Rate-limit oynasi (soniya) |
-| `THROTTLE_LIMIT` | `100` | Oynadagi maksimal so'rovlar |
+| `API_PREFIX` | `api` | Prefix applied to all routes |
+| `FRONTEND_URL` | `http://localhost:5173` | Allowed CORS origin |
+| `DATABASE_URL` | — | PostgreSQL connection string (required) |
+| `JWT_ACCESS_SECRET` | `dev-access-secret` | Secret for access tokens |
+| `JWT_ACCESS_EXPIRES_IN` | `15m` | Access token lifetime |
+| `JWT_REFRESH_SECRET` | `dev-refresh-secret` | Secret for refresh tokens |
+| `JWT_REFRESH_EXPIRES_IN` | `7d` | Refresh token lifetime |
+| `SMTP_HOST` | — | SMTP server (production) |
+| `SMTP_PORT` | `587` | SMTP port |
+| `SMTP_USER` | — | SMTP username |
+| `SMTP_PASS` | — | SMTP password |
+| `SMTP_FROM` | `EventLab.uz <noreply@eventlab.uz>` | Email "From" header |
+| `UPLOAD_DIR` | `./uploads` | Folder where uploaded files are stored |
+| `MAX_FILE_SIZE` | `10485760` (10 MB) | Maximum upload size in bytes |
+| `THROTTLE_TTL` | `60` | Rate-limit window (seconds) |
+| `THROTTLE_LIMIT` | `100` | Max requests per window |
 
-> Productionda **JWT secret'larni majburiy almashtiring** va kuchli random qiymat ishlating.
+> **Always rotate the JWT secrets in production** and use long random values.
 
 ---
 
-## Test foydalanuvchilar
+## Test Users
 
-`yarn db:seed` dan keyin (parol hammasi: **`Password123!`**):
+After running `yarn db:seed` (password for everyone: **`Password123!`**):
 
-| Email | Rol |
-|-------|-----|
+| Email | Role |
+|-------|------|
 | `admin@eventlab.uz` | `ADMIN` |
 | `organizer@eventlab.uz` | `ORGANIZER` |
 | `speaker@eventlab.uz` | `SPEAKER` |
@@ -140,64 +141,64 @@ yarn start:dev
 
 ---
 
-## Foydali komandalar
+## Useful Commands
 
 ```bash
-# Ishlab chiqish
-yarn start:dev          # watch rejimida (har o'zgarishda restart)
-yarn start:debug        # --inspect bilan debugger
+# Development
+yarn start:dev          # watch mode (auto restart on changes)
+yarn start:debug        # with --inspect debugger
 
 # Production
-yarn build              # dist/ ga kompilyatsiya
+yarn build              # compile to dist/
 yarn start:prod         # node dist/main
 
 # Database
-yarn db:generate        # Prisma Client'ni qayta generatsiya qilish
-yarn db:migrate         # yangi migration yaratish va qo'llash
-yarn db:push            # schema'ni migration'siz to'g'ridan-to'g'ri qo'llash
-yarn db:seed            # test ma'lumotlarni yuklash
-yarn db:studio          # Prisma Studio GUI (brauzer orqali ko'rish)
-yarn db:reset           # DB'ni tozalab qayta yaratish (DIQQAT: barcha ma'lumot o'chadi)
+yarn db:generate        # regenerate Prisma Client
+yarn db:migrate         # create + apply a new migration
+yarn db:push            # push schema directly without a migration
+yarn db:seed            # load test data
+yarn db:studio          # Prisma Studio GUI (browser-based)
+yarn db:reset           # wipe and recreate DB (DANGER: drops all data)
 
-# Sifat
+# Quality
 yarn lint               # ESLint
 yarn format             # Prettier
-yarn test               # unit testlar
-yarn test:cov           # coverage hisoboti bilan
-yarn test:e2e           # end-to-end testlar
+yarn test               # unit tests
+yarn test:cov           # unit tests with coverage report
+yarn test:e2e           # end-to-end tests
 ```
 
 ---
 
-## Loyiha tuzilmasi
+## Project Structure
 
 ```
 eventlab-backend/
 ├── prisma/
-│   ├── schema.prisma         # Ma'lumotlar bazasi sxemasi
-│   ├── migrations/           # Migration tarixi
-│   └── seed.ts               # Test ma'lumotlar
+│   ├── schema.prisma         # Database schema
+│   ├── migrations/           # Migration history
+│   └── seed.ts               # Seed data
 ├── src/
-│   ├── auth/                 # JWT, register/login/refresh/logout
-│   ├── users/                # Foydalanuvchilar, avatar yuklash
-│   ├── conferences/          # Konferensiya CRUD + banner yuklash
-│   ├── sessions/             # Sessiyalar (ma'ruzalar) CRUD
-│   ├── registrations/        # Yozilish + ticket QR + ticket PDF
-│   ├── questions/            # Q&A (savol/javob, upvote)
-│   ├── notifications/        # Bildirishnomalar
-│   ├── materials/            # Fayl yuklash (taqdimot, hujjat)
-│   ├── certificates/         # Sertifikat (PDF + QR + verify)
-│   ├── feedback/             # Sessiya bahosi (1–5 yulduz)
+│   ├── auth/                 # JWT — register / login / refresh / logout
+│   ├── users/                # Users, avatar uploads
+│   ├── conferences/          # Conference CRUD + banner uploads
+│   ├── sessions/             # Session (talk) CRUD
+│   ├── registrations/        # Sign-ups + ticket QR + ticket PDF
+│   ├── questions/            # Q&A (questions, answers, upvotes)
+│   ├── notifications/        # Notifications
+│   ├── materials/            # File uploads (slides, documents)
+│   ├── certificates/         # Certificates (PDF + QR + verify)
+│   ├── feedback/             # Session ratings (1–5 stars)
 │   ├── gateway/              # Socket.IO (events.gateway.ts)
-│   ├── email/                # Email xizmati (dev: console)
+│   ├── email/                # Email service (dev: console)
 │   ├── prisma/               # PrismaService
 │   ├── common/               # decorators, guards, filters, interceptors
-│   ├── config/               # Konfiguratsiya
-│   ├── uploads/              # MulterModule, storage konfiguratsiyasi
-│   ├── app.module.ts         # Root modul
+│   ├── config/               # configuration loader
+│   ├── uploads/              # MulterModule, storage configuration
+│   ├── app.module.ts         # Root module
 │   └── main.ts               # bootstrap (helmet, CORS, Swagger)
-├── uploads/                  # Yuklangan fayllar (gitga qo'shilmaydi)
-├── test/                     # E2E testlar
+├── uploads/                  # Uploaded files (gitignored)
+├── test/                     # E2E tests
 ├── nest-cli.json
 ├── tsconfig.json
 └── package.json
@@ -205,184 +206,186 @@ eventlab-backend/
 
 ---
 
-## Ma'lumotlar bazasi modellari
+## Database Models
 
-Prisma sxemasi 9 ta asosiy modeldan iborat:
+The Prisma schema defines 9 main models:
 
-| Model | Tavsif |
-|-------|--------|
-| `User` | Foydalanuvchi (rol, parol, profil) |
-| `RefreshToken` | Refresh token saqlanmasi (rotation uchun) |
-| `Conference` | Konferensiya (sarlavha, sana, banner, tashkilotchi) |
-| `Session` | Sessiya / ma'ruza (vaqt, xona, ma'ruzachi) |
-| `Registration` | Yozilish + unikal `ticketCode` (QR) |
-| `Question` | Q&A savol (upvote, javob) |
-| `Material` | Sessiya fayllari (PDF, slayd, va h.k.) |
-| `Certificate` | Sertifikat (unikal kod, PDF URL) |
-| `Feedback` | Sessiya bahosi (1–5 + komment) |
-| `Notification` | Bildirishnoma |
+| Model | Description |
+|-------|-------------|
+| `User` | User account (role, password, profile) |
+| `RefreshToken` | Stored refresh tokens (used for token rotation) |
+| `Conference` | Conference (title, dates, banner, organizer) |
+| `Session` | Session / talk (time, room, speaker) |
+| `Registration` | Registration with a unique `ticketCode` (used in QR) |
+| `Question` | Q&A question (upvotes, answer) |
+| `Material` | Session files (PDF, slides, etc.) |
+| `Certificate` | Certificate (unique code, PDF URL) |
+| `Feedback` | Session rating (1–5 + optional comment) |
+| `Notification` | Notification |
 
-### Enum'lar
+### Enums
 
 - `Role`: `ADMIN | ORGANIZER | SPEAKER | PARTICIPANT | GUEST`
 - `ConferenceStatus`: `DRAFT | PUBLISHED | ONGOING | FINISHED | CANCELLED`
 - `RegistrationStatus`: `PENDING | CONFIRMED | CANCELLED | ATTENDED`
 - `NotificationType`: `SYSTEM | CONFERENCE | SESSION | QUESTION | CERTIFICATE`
 
-To'liq sxema: [`prisma/schema.prisma`](prisma/schema.prisma).
+Full schema: [`prisma/schema.prisma`](prisma/schema.prisma).
 
 ---
 
-## Autentifikatsiya va rollar
+## Authentication & Roles
 
-### Token oqimi
+### Token flow
 
-1. `POST /api/auth/register` yoki `POST /api/auth/login` →
-   `{ accessToken, refreshToken, user }` qaytaradi.
-2. Har bir himoyalangan so'rovda header:
+1. `POST /api/auth/register` or `POST /api/auth/login` returns
+   `{ accessToken, refreshToken, user }`.
+2. Send the access token in the `Authorization` header on every protected request:
    ```
    Authorization: Bearer <accessToken>
    ```
-3. Access token muddati tugaganda:
+3. When the access token expires, exchange the refresh token:
    ```
    POST /api/auth/refresh
    Body: { "refreshToken": "..." }
    ```
-   Yangi juftlik qaytadi (refresh token **rotate** qilinadi).
-4. `POST /api/auth/logout` — refresh tokenni serverdan o'chiradi.
+   A new pair is returned and the refresh token is **rotated**.
+4. `POST /api/auth/logout` removes the refresh token from the server.
 
-### Rol asosida himoya
+### Role-based access control
 
-`@Roles(Role.ADMIN, Role.ORGANIZER)` dekoratori va `RolesGuard` orqali endpoint
-ma'lum rollar uchun cheklanadi. Public endpointlar `@Public()` bilan belgilanadi.
+The `@Roles(Role.ADMIN, Role.ORGANIZER)` decorator combined with `RolesGuard`
+restricts an endpoint to specific roles. Public endpoints are marked with
+`@Public()` and skip authentication entirely.
 
 ---
 
-## API endpointlari
+## API Endpoints
 
-> Hammasi `/api` prefiksi bilan. To'liq schema va misollar uchun **Swagger**'ni oching:
-> `http://localhost:3000/docs`
+> All routes are mounted under the `/api` prefix. For full schemas and
+> request/response examples open **Swagger** at `http://localhost:3000/docs`.
 
 ### Auth
 
-| Metod | Yo'l | Auth | Tavsif |
-|-------|------|------|--------|
-| `POST` | `/auth/register` | public | Ro'yxatdan o'tish |
-| `POST` | `/auth/login` | public | Kirish |
-| `POST` | `/auth/refresh` | public | Yangi access token |
-| `POST` | `/auth/logout` | bearer | Sessiyadan chiqish |
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `POST` | `/auth/register` | public | Sign up |
+| `POST` | `/auth/login` | public | Log in |
+| `POST` | `/auth/refresh` | public | Issue a new access token |
+| `POST` | `/auth/logout` | bearer | End the current session |
 
 ### Users
 
-| Metod | Yo'l | Auth | Tavsif |
-|-------|------|------|--------|
-| `GET` | `/users/me` | bearer | O'z profilim |
-| `POST` | `/users/me/avatar` | bearer | Avatar yuklash |
-| `DELETE` | `/users/me/avatar` | bearer | Avatarni o'chirish |
-| `GET` | `/users` | ADMIN | Barcha foydalanuvchilar |
-| `GET` | `/users/speakers` | ADMIN, ORGANIZER | Faqat ma'ruzachilar |
-| `POST` | `/users` | ADMIN | Yangi foydalanuvchi yaratish |
-| `GET` | `/users/:id` | bearer | Bitta foydalanuvchi |
-| `PATCH` | `/users/:id` | ADMIN | Foydalanuvchini tahrirlash |
-| `DELETE` | `/users/:id` | ADMIN | Foydalanuvchini o'chirish |
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/users/me` | bearer | Current user profile |
+| `POST` | `/users/me/avatar` | bearer | Upload avatar |
+| `DELETE` | `/users/me/avatar` | bearer | Remove avatar |
+| `GET` | `/users` | ADMIN | List all users |
+| `GET` | `/users/speakers` | ADMIN, ORGANIZER | List only speakers |
+| `POST` | `/users` | ADMIN | Create a user |
+| `GET` | `/users/:id` | bearer | Get a single user |
+| `PATCH` | `/users/:id` | ADMIN | Update a user |
+| `DELETE` | `/users/:id` | ADMIN | Delete a user |
 
 ### Conferences
 
-| Metod | Yo'l | Auth | Tavsif |
-|-------|------|------|--------|
-| `GET` | `/conferences` | public | Ro'yxat (`?status=...&search=...&category=...`) |
-| `GET` | `/conferences/:id` | public | Bitta konferensiya |
-| `POST` | `/conferences` | ADMIN, ORGANIZER | Yaratish |
-| `PATCH` | `/conferences/:id` | ADMIN, ORGANIZER | Tahrirlash |
-| `POST` | `/conferences/:id/banner` | ADMIN, ORGANIZER | Banner rasm yuklash |
-| `DELETE` | `/conferences/:id/banner` | ADMIN, ORGANIZER | Bannerni olib tashlash |
-| `DELETE` | `/conferences/:id` | bearer | O'chirish (faqat egasi/admin) |
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/conferences` | public | List (`?status=...&search=...&category=...`) |
+| `GET` | `/conferences/:id` | public | Single conference |
+| `POST` | `/conferences` | ADMIN, ORGANIZER | Create |
+| `PATCH` | `/conferences/:id` | ADMIN, ORGANIZER | Update |
+| `POST` | `/conferences/:id/banner` | ADMIN, ORGANIZER | Upload banner image |
+| `DELETE` | `/conferences/:id/banner` | ADMIN, ORGANIZER | Remove banner |
+| `DELETE` | `/conferences/:id` | bearer | Delete (owner / admin only) |
 
 ### Sessions
 
-| Metod | Yo'l | Auth | Tavsif |
-|-------|------|------|--------|
-| `GET` | `/sessions/conference/:conferenceId` | public | Konferensiya sessiyalari |
-| `GET` | `/sessions/:id` | public | Bitta sessiya |
-| `POST` | `/sessions` | ADMIN, ORGANIZER | Sessiya yaratish |
-| `PATCH` | `/sessions/:id` | ADMIN, ORGANIZER | Tahrirlash |
-| `DELETE` | `/sessions/:id` | ADMIN, ORGANIZER | O'chirish |
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/sessions/conference/:conferenceId` | public | Sessions of a conference |
+| `GET` | `/sessions/:id` | public | Single session |
+| `POST` | `/sessions` | ADMIN, ORGANIZER | Create a session |
+| `PATCH` | `/sessions/:id` | ADMIN, ORGANIZER | Update |
+| `DELETE` | `/sessions/:id` | ADMIN, ORGANIZER | Delete |
 
 ### Registrations
 
-| Metod | Yo'l | Auth | Tavsif |
-|-------|------|------|--------|
-| `GET` | `/registrations/me` | bearer | Mening yozilishlarim |
-| `GET` | `/registrations/conference/:conferenceId` | bearer | Konferensiya qatnashchilari |
-| `POST` | `/registrations/conference/:conferenceId` | bearer | Konferensiyaga yozilish |
-| `DELETE` | `/registrations/conference/:conferenceId` | bearer | Yozilishni bekor qilish |
-| `GET` | `/registrations/ticket/:code` | public | Ticket'ni kod orqali tekshirish |
-| `GET` | `/registrations/ticket/:code/download` | public | Ticket PDF (QR bilan) |
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/registrations/me` | bearer | My registrations |
+| `GET` | `/registrations/conference/:conferenceId` | bearer | Conference attendees |
+| `POST` | `/registrations/conference/:conferenceId` | bearer | Register for a conference |
+| `DELETE` | `/registrations/conference/:conferenceId` | bearer | Cancel registration |
+| `GET` | `/registrations/ticket/:code` | public | Verify a ticket by code |
+| `GET` | `/registrations/ticket/:code/download` | public | Download ticket PDF (with QR) |
 
 ### Questions (Q&A)
 
-| Metod | Yo'l | Auth | Tavsif |
-|-------|------|------|--------|
-| `GET` | `/questions/session/:sessionId` | public | Sessiya savollari |
-| `POST` | `/questions` | bearer | Yangi savol berish |
-| `POST` | `/questions/:id/upvote` | bearer | Savolga ovoz berish |
-| `POST` | `/questions/:id/answer` | bearer | Savolga javob berish (speaker/organizer) |
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/questions/session/:sessionId` | public | Questions for a session |
+| `POST` | `/questions` | bearer | Submit a new question |
+| `POST` | `/questions/:id/upvote` | bearer | Upvote a question |
+| `POST` | `/questions/:id/answer` | bearer | Answer a question (speaker / organizer) |
 
 ### Notifications
 
-| Metod | Yo'l | Auth | Tavsif |
-|-------|------|------|--------|
-| `GET` | `/notifications` | bearer | Mening bildirishnomalarim |
-| `GET` | `/notifications/unread-count` | bearer | O'qilmaganlar soni |
-| `PATCH` | `/notifications/:id/read` | bearer | O'qilgan deb belgilash |
-| `PATCH` | `/notifications/read-all` | bearer | Hammasini o'qilgan deb belgilash |
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/notifications` | bearer | My notifications |
+| `GET` | `/notifications/unread-count` | bearer | Unread count |
+| `PATCH` | `/notifications/:id/read` | bearer | Mark one as read |
+| `PATCH` | `/notifications/read-all` | bearer | Mark all as read |
 
 ### Materials
 
-| Metod | Yo'l | Auth | Tavsif |
-|-------|------|------|--------|
-| `GET` | `/materials/session/:sessionId` | public | Sessiya materiallari |
-| `POST` | `/materials/upload` | bearer | Fayl yuklash (multipart/form-data) |
-| `DELETE` | `/materials/:id` | bearer | Faylni o'chirish |
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/materials/session/:sessionId` | public | Materials for a session |
+| `POST` | `/materials/upload` | bearer | Upload a file (multipart/form-data) |
+| `DELETE` | `/materials/:id` | bearer | Delete a file |
 
 ### Certificates
 
-| Metod | Yo'l | Auth | Tavsif |
-|-------|------|------|--------|
-| `GET` | `/certificates/me` | bearer | Mening sertifikatlarim |
-| `POST` | `/certificates/issue/:conferenceId` | bearer | Sertifikat berish |
-| `GET` | `/certificates/verify/:code` | public | Sertifikatni kod orqali tekshirish |
-| `GET` | `/certificates/download/:code` | public | Sertifikat PDF'ini yuklab olish |
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/certificates/me` | bearer | My certificates |
+| `POST` | `/certificates/issue/:conferenceId` | bearer | Issue a certificate |
+| `GET` | `/certificates/verify/:code` | public | Verify a certificate by code |
+| `GET` | `/certificates/download/:code` | public | Download certificate PDF |
 
 ### Feedback
 
-| Metod | Yo'l | Auth | Tavsif |
-|-------|------|------|--------|
-| `GET` | `/feedback/session/:sessionId` | public | Sessiya baholari ro'yxati |
-| `GET` | `/feedback/session/:sessionId/average` | public | O'rtacha baho |
-| `POST` | `/feedback` | bearer | Sessiyaga baho berish |
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/feedback/session/:sessionId` | public | All ratings for a session |
+| `GET` | `/feedback/session/:sessionId/average` | public | Average rating |
+| `POST` | `/feedback` | bearer | Submit a rating |
 
 ---
 
-## Fayl yuklash (uploads)
+## File Uploads
 
-- Barcha yuklangan fayllar `uploads/` papkasida saqlanadi va `/uploads/...`
-  yo'li orqali statik tarzda taqdim etiladi.
-- Maksimal hajm: `MAX_FILE_SIZE` (standart **10 MB**).
-- **Banner / avatar (rasm)** uchun ruxsat etilgan formatlar: `PNG`, `JPG/JPEG`,
-  `WEBP`, `GIF`. Rasmlar `sharp` orqali optimallashtiriladi.
-- **Materiallar** uchun: `PDF`, `DOCX`, `PPTX`, `XLSX`, va boshqa hujjat formatlari.
-- Fayl nomi serverda UUID asosida qayta nomlanadi (kolliziya bo'lmasligi uchun).
-- Frontend `helmet` `Cross-Origin-Resource-Policy: cross-origin` bilan boshqa
-  origindan fayllarni yuklay oladi.
+- All uploaded files are stored under `uploads/` and served statically through
+  `/uploads/...`.
+- Maximum size: `MAX_FILE_SIZE` (default **10 MB**).
+- **Banner / avatar (images):** allowed types are `PNG`, `JPG/JPEG`, `WEBP`,
+  `GIF`. Images are optimized via `sharp`.
+- **Materials:** `PDF`, `DOCX`, `PPTX`, `XLSX`, and other common document
+  formats are accepted.
+- File names are renamed to UUIDs on the server to avoid collisions.
+- The frontend can serve images from a different origin because `helmet` is
+  configured with `Cross-Origin-Resource-Policy: cross-origin`.
 
 ---
 
-## Socket.IO real-time qatlam
+## Socket.IO Real-time Layer
 
 **WebSocket URL:** `ws://localhost:3000`
 
-**Autentifikatsiya** — handshake'da JWT token uzatiladi:
+**Authentication** — pass the JWT token in the handshake:
 
 ```ts
 const socket = io('http://localhost:3000', {
@@ -390,123 +393,125 @@ const socket = io('http://localhost:3000', {
 });
 ```
 
-### Mijoz → Server (emit)
+### Client → Server (emit)
 
-| Event | Payload | Maqsad |
-|-------|---------|--------|
-| `join_conference` | `{ conferenceId }` | Konferensiya xonasiga qo'shilish |
-| `leave_conference` | `{ conferenceId }` | Xonadan chiqish |
-| `join_session` | `{ sessionId }` | Sessiya xonasiga qo'shilish |
-| `send_question` | `{ sessionId, text }` | Yangi savol yuborish |
-| `upvote_question` | `{ questionId, sessionId }` | Savolga ovoz berish |
-| `send_message` | `{ conferenceId, text }` | Konferensiya chat'iga xabar |
+| Event | Payload | Purpose |
+|-------|---------|---------|
+| `join_conference` | `{ conferenceId }` | Join a conference room |
+| `leave_conference` | `{ conferenceId }` | Leave the room |
+| `join_session` | `{ sessionId }` | Join a session room |
+| `send_question` | `{ sessionId, text }` | Submit a new question |
+| `upvote_question` | `{ questionId, sessionId }` | Upvote a question |
+| `send_message` | `{ conferenceId, text }` | Send a chat message |
 
-### Server → Mijoz (listen)
+### Server → Client (listen)
 
-| Event | Payload | Tavsif |
-|-------|---------|--------|
-| `new_question` | `Question` | Yangi savol yaratildi |
-| `question_upvoted` | `Question` | Savol ovoz oldi |
-| `new_message` | `{ user, text, timestamp }` | Chat xabari |
-| `user_joined` | `{ userId, name }` | Yangi qatnashchi qo'shildi |
-| `session_updated` | `Session` | Sessiya o'zgardi |
-| `notification` | `Notification` | Shaxsiy bildirishnoma (`user:<id>` xonasi) |
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `new_question` | `Question` | A new question was created |
+| `question_upvoted` | `Question` | A question was upvoted |
+| `new_message` | `{ user, text, timestamp }` | Chat message |
+| `user_joined` | `{ userId, name }` | A new participant joined |
+| `session_updated` | `Session` | Session was modified |
+| `notification` | `Notification` | Personal notification (delivered to `user:<id>` room) |
 
-**Xona (room) konvensiyasi:**
-- `conference:<id>` — konferensiya bo'yicha
-- `session:<id>` — sessiya bo'yicha
-- `user:<id>` — shaxsiy bildirishnomalar
-
----
-
-## Email xizmati
-
-- **Development:** xabarlar console'ga yoziladi (SMTP kerak emas).
-- **Production:** `.env`'da `SMTP_*` o'zgaruvchilarini to'ldiring va
-  [`src/email/email.service.ts`](src/email/email.service.ts)'dagi `nodemailer`
-  transport'ini yoqing.
-
-Email yuborilishi mumkin bo'lgan vaziyatlar:
-- Ro'yxatdan o'tish tasdiqi
-- Konferensiyaga yozilish chiptasi
-- Sessiya boshlanishi haqida eslatma
-- Sertifikat berildi
+**Room naming convention:**
+- `conference:<id>` — per conference
+- `session:<id>` — per session
+- `user:<id>` — per-user notifications
 
 ---
 
-## Sertifikat (PDF + QR)
+## Email Service
 
-`POST /api/certificates/issue/:conferenceId` chaqirilganda:
+- **Development:** messages are written to the console (no SMTP needed).
+- **Production:** fill in the `SMTP_*` variables in `.env` and enable the
+  `nodemailer` transport in
+  [`src/email/email.service.ts`](src/email/email.service.ts).
 
-1. Foydalanuvchi konferensiyada qatnashganligi tekshiriladi (`ATTENDED` status).
-2. Unikal kod (`code`) generatsiya qilinadi.
-3. `pdfkit` orqali PDF tuziladi: F.I.Sh., konferensiya nomi, sana, QR kod.
-4. QR kod `GET /api/certificates/verify/:code` URL'iga yo'naltiradi.
-5. PDF `uploads/certificates/`'da saqlanadi, URL javobda qaytariladi.
-
----
-
-## Xavfsizlik
-
-| Qatlam | Mexanizm |
-|--------|----------|
-| HTTP headerlar | `helmet` (XSS, clickjacking, MIME sniff himoyasi) |
-| CORS | Faqat `FRONTEND_URL` (credentials: `true`) |
-| Rate-limit | `@nestjs/throttler` — `THROTTLE_LIMIT`/`THROTTLE_TTL` |
-| Validatsiya | `ValidationPipe` (whitelist + forbidNonWhitelisted) |
-| Parol | `bcrypt` (10 rounds) |
-| JWT | Ikkita sirli kalit (access + refresh), refresh rotation |
-| Rol nazorati | `JwtAuthGuard` + `RolesGuard` + `@Roles()` |
-| SQL injection | Prisma parametrlangan so'rovlar |
-| Fayl yuklash | MIME tip va kengaytma whitelist + hajm chegarasi |
+Possible email triggers:
+- Sign-up confirmation
+- Conference registration ticket
+- Reminder before a session starts
+- Certificate issued
 
 ---
 
-## Testlash
+## Certificates (PDF + QR)
+
+When `POST /api/certificates/issue/:conferenceId` is called:
+
+1. The system verifies the user attended the conference (`ATTENDED` status).
+2. A unique `code` is generated.
+3. A PDF is built with `pdfkit`: full name, conference title, date, QR code.
+4. The QR code points to `GET /api/certificates/verify/:code`.
+5. The PDF is saved under `uploads/certificates/`, the URL is returned in the
+   response.
+
+---
+
+## Security
+
+| Layer | Mechanism |
+|-------|-----------|
+| HTTP headers | `helmet` (XSS, clickjacking, MIME-sniff protection) |
+| CORS | Only `FRONTEND_URL`, `credentials: true` |
+| Rate limiting | `@nestjs/throttler` — `THROTTLE_LIMIT` per `THROTTLE_TTL` |
+| Validation | `ValidationPipe` (whitelist + `forbidNonWhitelisted`) |
+| Passwords | `bcrypt` (10 rounds) |
+| JWT | Two separate secrets (access + refresh), refresh rotation |
+| Authorization | `JwtAuthGuard` + `RolesGuard` + `@Roles()` |
+| SQL injection | Prisma parameterized queries |
+| File uploads | MIME-type and extension whitelist + size limit |
+
+---
+
+## Testing
 
 ```bash
-yarn test               # unit testlar (jest)
-yarn test:watch         # watch rejimi
-yarn test:cov           # coverage
+yarn test               # unit tests (jest)
+yarn test:watch         # watch mode
+yarn test:cov           # coverage report
 yarn test:e2e           # end-to-end (test/jest-e2e.json)
 ```
 
-Test fayllar `*.spec.ts` shaklida modul ichida joylashadi (`src/**/*.spec.ts`).
+Test files live next to the modules they cover, named `*.spec.ts`
+(`src/**/*.spec.ts`).
 
 ---
 
-## Production deploy
+## Production Deployment
 
-1. **`.env` faylini production qiymatlar bilan to'ldiring:**
+1. **Fill `.env` with real production values:**
    - `NODE_ENV=production`
-   - `JWT_ACCESS_SECRET` va `JWT_REFRESH_SECRET` — kuchli random satr
+   - `JWT_ACCESS_SECRET` and `JWT_REFRESH_SECRET` — long random strings
      (`openssl rand -base64 64`)
    - `DATABASE_URL` — production PostgreSQL
-   - `FRONTEND_URL` — frontend domeni
-   - `SMTP_*` — haqiqiy SMTP server
+   - `FRONTEND_URL` — frontend domain
+   - `SMTP_*` — real SMTP server
 
-2. **Build va migration:**
+2. **Build and apply migrations:**
    ```bash
    yarn install --frozen-lockfile
    yarn db:generate
-   yarn db:migrate deploy   # productionda dev emas, deploy
+   yarn db:migrate deploy   # use `deploy`, not `dev`, in production
    yarn build
    ```
 
-3. **Ishga tushirish:**
+3. **Start the server:**
    ```bash
    yarn start:prod
    ```
 
-4. **Reverse proxy (nginx) tavsiya etiladi:**
-   - `/api/*` va `/docs` → backend (3000-port)
-   - `/uploads/*` → backend yoki to'g'ridan-to'g'ri fayl tizimi
-   - WebSocket uchun `Upgrade` header'ini uzatish
+4. **A reverse proxy (nginx) is recommended:**
+   - `/api/*` and `/docs` → backend (port 3000)
+   - `/uploads/*` → backend, or serve directly from disk
+   - Forward the `Upgrade` header for WebSocket support
 
-5. **Process manager:** `pm2`, `systemd`, yoki Docker.
+5. **Process manager:** `pm2`, `systemd`, or Docker.
 
 ---
 
-## Litsenziya
+## License
 
-UNLICENSED — ichki loyiha.
+UNLICENSED — internal project.
