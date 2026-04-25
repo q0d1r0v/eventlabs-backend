@@ -46,6 +46,13 @@ lerna-debug.log*
 .temp
 .tmp
 
+# Uploaded files (foydalanuvchi yuklagan rasm, hujjat, PDF)
+# Papka tuzilmasi saqlansin, lekin ichidagi fayllar git'ga tushmasin
+/uploads/**/*
+!/uploads/
+!/uploads/**/
+!/uploads/**/.gitkeep
+
 # Runtime data
 pids
 *.pid
