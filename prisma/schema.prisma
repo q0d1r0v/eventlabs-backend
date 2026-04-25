@@ -1,0 +1,225 @@
+// EventLab.uz — Konferensiyalarni rejalashtirish va boshqarish tizimi
+// Prisma schema — PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum Role {
+  ADMIN
+  ORGANIZER
+  SPEAKER
+  PARTICIPANT
+  GUEST
+}
+
+enum ConferenceStatus {
+  DRAFT
+  PUBLISHED
+  ONGOING
+  FINISHED
+  CANCELLED
+}
+
+enum RegistrationStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  ATTENDED
+}
+
+enum NotificationType {
+  SYSTEM
+  CONFERENCE
+  SESSION
+  QUESTION
+  CERTIFICATE
+}
+
+// ============================================================
+// MODELS
+// ============================================================
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  password      String
+  name          String
+  role          Role     @default(PARTICIPANT)
+  avatar        String?
+  bio           String?
+  isVerified    Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  conferences   Conference[]   @relation("Organizer")
+  sessions      Session[]      @relation("Speaker")
+  registrations Registration[]
+  questions     Question[]
+  notifications Notification[]
+  certificates  Certificate[]
+  feedbacks     Feedback[]
+  refreshTokens RefreshToken[]
+
+  @@index([email])
+  @@index([role])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([token])
+}
+
+model Conference {
+  id            String           @id @default(uuid())
+  title         String
+  description   String
+  startDate     DateTime
+  endDate       DateTime
+  location      String
+  isOnline      Boolean          @default(false)
+  bannerUrl     String?
+  logoUrl       String?
+  category      String?
+  status        ConferenceStatus @default(DRAFT)
+  maxAttendees  Int?
+  organizerId   String
+  organizer     User             @relation("Organizer", fields: [organizerId], references: [id])
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  sessions      Session[]
+  registrations Registration[]
+  certificates  Certificate[]
+
+  @@index([organizerId])
+  @@index([status])
+  @@index([startDate])
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  conferenceId String
+  conference   Conference @relation(fields: [conferenceId], references: [id], onDelete: Cascade)
+  title        String
+  description  String
+  startTime    DateTime
+  endTime      DateTime
+  room         String?
+  virtualLink  String?
+  speakerId    String?
+  speaker      User?    @relation("Speaker", fields: [speakerId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  questions  Question[]
+  materials  Material[]
+  feedbacks  Feedback[]
+
+  @@index([conferenceId])
+  @@index([speakerId])
+  @@index([startTime])
+}
+
+model Registration {
+  id           String             @id @default(uuid())
+  userId       String
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conferenceId String
+  conference   Conference         @relation(fields: [conferenceId], references: [id], onDelete: Cascade)
+  status       RegistrationStatus @default(PENDING)
+  ticketCode   String             @unique
+  attendedAt   DateTime?
+  createdAt    DateTime           @default(now())
+
+  @@unique([userId, conferenceId])
+  @@index([conferenceId])
+  @@index([userId])
+}
+
+model Question {
+  id          String   @id @default(uuid())
+  sessionId   String
+  session     Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  text        String
+  upvotes     Int      @default(0)
+  isAnswered  Boolean  @default(false)
+  answer      String?
+  createdAt   DateTime @default(now())
+
+  @@index([sessionId])
+  @@index([userId])
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType @default(SYSTEM)
+  title     String
+  message   String
+  link      String?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@index([userId])
+  @@index([isRead])
+}
+
+model Material {
+  id        String   @id @default(uuid())
+  sessionId String
+  session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  fileUrl   String
+  fileName  String
+  fileType  String
+  fileSize  Int
+  createdAt DateTime @default(now())
+
+  @@index([sessionId])
+}
+
+model Certificate {
+  id           String     @id @default(uuid())
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conferenceId String
+  conference   Conference @relation(fields: [conferenceId], references: [id], onDelete: Cascade)
+  code         String     @unique
+  pdfUrl       String?
+  issuedAt     DateTime   @default(now())
+
+  @@unique([userId, conferenceId])
+  @@index([code])
+}
+
+model Feedback {
+  id        String   @id @default(uuid())
+  sessionId String
+  session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+
+  @@unique([sessionId, userId])
+  @@index([sessionId])
+}
