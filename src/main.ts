@@ -10,7 +10,13 @@ async function bootstrap() {
   const config = app.get(ConfigService);
   const logger = new Logger('Bootstrap');
 
-  app.use(helmet());
+  // Helmet xavfsizlik headerlari, lekin uploads/ dagi rasm va fayllarni
+  // frontend (boshqa origin) yuklay olishi uchun CORP'ni cross-origin qiladik
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    }),
+  );
 
   app.enableCors({
     origin: [

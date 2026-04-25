@@ -15,15 +15,13 @@ export class NotificationsController {
   }
 
   @Get('unread-count')
-  unreadCount(@CurrentUser('sub') userId: string) {
-    return this.notifications.unreadCount(userId);
+  async unreadCount(@CurrentUser('sub') userId: string) {
+    const count = await this.notifications.unreadCount(userId);
+    return { count };
   }
 
   @Patch(':id/read')
-  markAsRead(
-    @Param('id') id: string,
-    @CurrentUser('sub') userId: string,
-  ) {
+  markAsRead(@Param('id') id: string, @CurrentUser('sub') userId: string) {
     return this.notifications.markAsRead(id, userId);
   }
 

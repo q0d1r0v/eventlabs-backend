@@ -4,6 +4,7 @@ import {
   IsString,
   IsUUID,
   MinLength,
+  ValidateIf,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -29,18 +30,21 @@ export class CreateSessionDto {
   @IsDateString()
   endTime!: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ nullable: true })
   @IsOptional()
+  @ValidateIf((_o, value) => value !== null)
   @IsString()
-  room?: string;
+  room?: string | null;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ nullable: true })
   @IsOptional()
+  @ValidateIf((_o, value) => value !== null)
   @IsString()
-  virtualLink?: string;
+  virtualLink?: string | null;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ nullable: true })
   @IsOptional()
+  @ValidateIf((_o, value) => value !== null)
   @IsUUID()
-  speakerId?: string;
+  speakerId?: string | null;
 }

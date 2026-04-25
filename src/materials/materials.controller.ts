@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -15,6 +16,20 @@ import { extname } from 'path';
 import { v4 as uuid } from 'uuid';
 import { MaterialsService } from './materials.service';
 import { Public } from '../common/decorators/public.decorator';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { Role } from '@prisma/client';
+
+const ALLOWED_MIME = new Set([
+  'application/pdf',
+  'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/zip',
+  'image/png',
+  'image/jpeg',
+  'image/webp',
+]);
 
 @ApiTags('materials')
 @Controller('materials')
@@ -37,14 +52,33 @@ export class MaterialsController {
           cb(null, `${uuid()}${extname(file.originalname)}`);
         },
       }),
-      limits: { fileSize: 10 * 1024 * 1024 },
+      limits: { fileSize: 25 * 1024 * 1024 }, // 25 MB
+      fileFilter: (_req, file, cb) => {
+        if (!ALLOWED_MIME.has(file.mimetype)) {
+          cb(
+            new BadRequestException(
+              "Fayl turi qo'llab-quvvatlanmaydi (PDF, PPT, DOC, ZIP, rasm)",
+            ),
+            false,
+          );
+          return;
+        }
+        cb(null, true);
+      },
     }),
   )
   upload(
+    @CurrentUser() user: { sub: string; role: Role },
     @UploadedFile() file: Express.Multer.File,
     @Body('sessionId') sessionId: string,
   ) {
-    return this.materials.create({
+    if (!file) {
+      throw new BadRequestException('Fayl yuborilmadi');
+    }
+    if (!sessionId) {
+      throw new BadRequestException('sessionId majburiy');
+    }
+    return this.materials.createForSession(user.sub, user.role, {
       sessionId,
       fileUrl: `/uploads/materials/${file.filename}`,
       fileName: file.originalname,
@@ -55,7 +89,10 @@ export class MaterialsController {
 
   @ApiBearerAuth()
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.materials.remove(id);
+  remove(
+    @Param('id') id: string,
+    @CurrentUser() user: { sub: string; role: Role },
+  ) {
+    return this.materials.remove(id, user.sub, user.role);
   }
 }

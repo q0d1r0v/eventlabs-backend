@@ -16,9 +16,7 @@ import { QuestionsService } from '../questions/questions.service';
 @WebSocketGateway({
   cors: { origin: '*', credentials: true },
 })
-export class EventsGateway
-  implements OnGatewayConnection, OnGatewayDisconnect
-{
+export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer() server!: Server;
   private readonly logger = new Logger(EventsGateway.name);
 
@@ -36,12 +34,20 @@ export class EventsGateway
           secret: this.config.get<string>('jwt.accessSecret'),
         });
         client.data.user = payload;
-        this.logger.log(`Client connected: ${client.id} (user: ${payload.email})`);
+        // Shaxsiy bildirishnomalar uchun foydalanuvchi room'iga qo'shamiz
+        if (payload?.sub) {
+          client.join(`user:${payload.sub}`);
+        }
+        this.logger.log(
+          `Client connected: ${client.id} (user: ${payload.email})`,
+        );
       } else {
         this.logger.log(`Anonymous client connected: ${client.id}`);
       }
     } catch (err) {
-      this.logger.warn(`Auth failed for socket ${client.id}: ${(err as Error).message}`);
+      this.logger.warn(
+        `Auth failed for socket ${client.id}: ${(err as Error).message}`,
+      );
     }
   }
 
@@ -128,6 +134,10 @@ export class EventsGateway
 
   notifyConference(conferenceId: string, event: string, payload: unknown) {
     this.server.to(`conference:${conferenceId}`).emit(event, payload);
+  }
+
+  notifySession(sessionId: string, event: string, payload: unknown) {
+    this.server.to(`session:${sessionId}`).emit(event, payload);
   }
 
   notifyUser(userId: string, event: string, payload: unknown) {

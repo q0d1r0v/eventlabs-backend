@@ -27,6 +27,7 @@ export class QuestionsService {
     return this.prisma.question.update({
       where: { id },
       data: { upvotes: { increment: 1 } },
+      include: { user: { select: { id: true, name: true, avatar: true } } },
     });
   }
 
@@ -34,6 +35,7 @@ export class QuestionsService {
     return this.prisma.question.update({
       where: { id },
       data: { isAnswered: true, answer },
+      include: { user: { select: { id: true, name: true, avatar: true } } },
     });
   }
 }
